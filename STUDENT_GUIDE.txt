@@ -1,0 +1,391 @@
+"""
+=============================================================================
+LAB 08: BAG OF VISUAL WORDS (BoVW) - STUDENT GUIDE
+=============================================================================
+
+Course: CS-474 Computer Vision
+Lab: Feature Extraction using Bag of Visual Words
+Semester: 6th Semester
+
+=============================================================================
+TABLE OF CONTENTS
+=============================================================================
+
+1. Introduction
+2. Pre-requisites and Setup
+3. Dataset Preparation
+4. Task Overview
+5. Understanding the Code
+6. Common Errors and Solutions
+7. Tips for Success
+8. Further Reading
+
+=============================================================================
+1. INTRODUCTION
+=============================================================================
+
+Welcome to Lab 08! In this lab, you will implement the Bag of Visual Words
+(BoVW) approach for image classification. This technique is fundamental in
+computer vision and is still used in many real-world applications.
+
+What you'll learn:
+- How to extract SIFT features from images
+- How to cluster features to create a visual vocabulary
+- How to represent images as histograms of visual words
+- How to use these representations for classification
+
+=============================================================================
+2. PRE-REQUISITES AND SETUP
+=============================================================================
+
+Required Python Libraries:
+--------------------------
+Install the following packages using pip:
+
+    pip install opencv-python
+    pip install opencv-contrib-python  # For SIFT
+    pip install numpy
+    pip install scikit-learn
+    pip install matplotlib
+    pip install seaborn
+    pip install scipy
+
+OR install all at once:
+
+    pip install opencv-python opencv-contrib-python numpy scikit-learn matplotlib seaborn scipy
+
+Verify Installation:
+-------------------
+Run this command to verify:
+
+    python -c "import cv2; import numpy; import sklearn; print('All packages installed successfully!')"
+
+=============================================================================
+3. DATASET PREPARATION
+=============================================================================
+
+You need to organize your images in the following structure:
+
+For Training (Task 1):
+---------------------
+training_images/
+    car_001.jpg
+    car_002.jpg
+    ...
+    car_010.jpg
+    flower_001.jpg
+    flower_002.jpg
+    ...
+    flower_010.jpg
+
+Minimum: 20 images total (10 per category)
+Recommended: 40+ images (20 per category)
+
+For Testing (Task 2):
+--------------------
+test_images/
+    car_test.jpg
+    flower_test.jpg
+
+For Classification (Task 3):
+---------------------------
+dataset/
+    cars/
+        car_001.jpg
+        car_002.jpg
+        ...
+    flowers/
+        flower_001.jpg
+        flower_002.jpg
+        ...
+
+IMPORTANT: Use different images for training and testing!
+
+Where to Get Images:
+-------------------
+1. Download from image datasets:
+   - Caltech 101: http://www.vision.caltech.edu/Image_Datasets/Caltech101/
+   - Kaggle datasets
+   - Google Images (for educational purposes)
+
+2. Use your own images:
+   - Take photos with your phone
+   - Ensure good quality and variety
+   - Different angles, lighting, backgrounds
+
+Image Requirements:
+------------------
+- Format: JPG, PNG, or BMP
+- Size: At least 300x300 pixels recommended
+- Quality: Clear images with distinct features
+- Variety: Different angles, lighting conditions
+
+=============================================================================
+4. TASK OVERVIEW
+=============================================================================
+
+Task 1: Building the Visual Vocabulary
+---------------------------------------
+Goal: Create a codebook of visual words from training images
+
+Steps:
+1. Extract SIFT features from all training images
+2. Collect all SIFT descriptors into one large array
+3. Apply K-Means clustering (K=50 or K=100)
+4. Save the cluster centers as vocabulary.pkl
+
+Input: Folder with 20+ training images
+Output: vocabulary.pkl file
+Time: ~20 minutes
+
+Run: python task1_build_vocabulary.py
+
+Task 2: Image Representation
+-----------------------------
+Goal: Convert images to BoVW histograms
+
+Steps:
+1. Load the vocabulary from Task 1
+2. Extract SIFT features from test images
+3. Map each feature to nearest visual word
+4. Create normalized histogram
+5. Visualize and compare histograms
+
+Input: vocabulary.pkl, test images
+Output: Histogram plots, comparison
+Time: ~15 minutes
+
+Run: python task2_image_representation.py
+
+Task 3: Image Classification
+-----------------------------
+Goal: Classify images using BoVW representations
+
+Steps:
+1. Convert all images to BoVW histograms
+2. Split into train/test sets (80/20)
+3. Train KNN and SVM classifiers
+4. Evaluate with accuracy and confusion matrix
+5. Compare classifier performance
+
+Input: vocabulary.pkl, organized dataset
+Output: Classification results, confusion matrices
+Time: ~25 minutes
+
+Run: python task3_classification.py
+
+=============================================================================
+5. UNDERSTANDING THE CODE
+=============================================================================
+
+Key Concepts in the Code:
+-------------------------
+
+1. SIFT Feature Extraction:
+   - cv2.SIFT_create(): Creates SIFT detector
+   - detectAndCompute(): Finds keypoints and descriptors
+   - Each descriptor is 128-dimensional vector
+
+2. K-Means Clustering:
+   - sklearn.cluster.KMeans()
+   - Groups similar descriptors together
+   - Cluster centers = visual words
+
+3. Vector Quantization:
+   - cdist(): Computes distances between descriptors and vocabulary
+   - argmin(): Finds nearest visual word for each descriptor
+
+4. Histogram Creation:
+   - np.histogram(): Counts occurrences of each visual word
+   - Normalization: Makes histogram sum to 1.0
+
+5. Classification:
+   - KNeighborsClassifier: Finds K nearest training samples
+   - LinearSVC: Finds optimal separating hyperplane
+
+Code Structure:
+--------------
+Each script has these main components:
+- Import statements
+- Helper functions (well-commented)
+- Main processing function
+- Configuration section (MODIFY THIS!)
+- Visualization functions
+
+What to Modify:
+--------------
+In each script, look for the CONFIGURATION section:
+
+# ========================================================================
+# CONFIGURATION - Students should modify these paths
+# ========================================================================
+
+Change these paths to match your folder structure!
+
+=============================================================================
+6. COMMON ERRORS AND SOLUTIONS
+=============================================================================
+
+Error: "No module named 'cv2'"
+------------------------------
+Solution: Install opencv-python
+    pip install opencv-python opencv-contrib-python
+
+Error: "SIFT is not available"
+------------------------------
+Solution: You need opencv-contrib-python
+    pip install opencv-contrib-python --upgrade
+
+Error: "No images found in folder"
+----------------------------------
+Solution: Check your folder path
+    - Use absolute path: /home/user/images/training_images
+    - Or relative path: ./training_images
+    - Verify images have correct extensions (.jpg, .png)
+
+Error: "Vocabulary file not found"
+----------------------------------
+Solution: Run Task 1 first to create vocabulary.pkl
+    python task1_build_vocabulary.py
+
+Error: "No SIFT features extracted"
+-----------------------------------
+Solution: Your images might be:
+    - Too small (use larger images)
+    - Too blurry (use clearer images)
+    - Too uniform (use images with textures/edges)
+
+Error: "KMeans not converging"
+------------------------------
+Solution: 
+    - Reduce K (number of clusters)
+    - Increase max_iter parameter
+    - Check that you have enough descriptors
+
+Error: "Low classification accuracy"
+------------------------------------
+Possible causes:
+    - Too few training images (need 20+ per class)
+    - Vocabulary size K is too small (try K=100 or K=200)
+    - Images are too similar between classes
+    - Not enough variety in training data
+
+=============================================================================
+7. TIPS FOR SUCCESS
+=============================================================================
+
+General Tips:
+------------
+1. Start with a small K (50) and small dataset to test quickly
+2. Gradually increase both as you understand the process
+3. Read the code comments carefully - they explain each step
+4. Print intermediate results to understand what's happening
+5. Save your outputs (plots, files) for the lab report
+
+For Better Results:
+------------------
+1. Use diverse training images:
+   - Different angles
+   - Different lighting
+   - Different backgrounds
+
+2. Experiment with parameters:
+   - K (vocabulary size): Try 50, 100, 200, 500
+   - KNN k: Try 3, 5, 7
+   - Train/test split: Try 80/20, 70/30
+
+3. Ensure good image quality:
+   - Resolution: At least 300x300 pixels
+   - Clarity: Avoid blurry images
+   - Features: Images should have distinct textures
+
+For Lab Report:
+--------------
+Include the following:
+1. All generated plots and visualizations
+2. Accuracy scores and confusion matrices
+3. Analysis of results:
+   - Which classifier performed better and why?
+   - How does K affect performance?
+   - What patterns do you see in misclassifications?
+4. Code snippets (key sections, not entire code)
+5. Answers to conceptual questions
+
+=============================================================================
+8. FURTHER READING
+=============================================================================
+
+Research Papers:
+---------------
+1. Lowe, D. G. (1999). "Object recognition from local scale-invariant features"
+   - Original SIFT paper
+
+2. Csurka, G., et al. (2004). "Visual categorization with bags of keypoints"
+   - Original BoVW paper
+
+3. Sivic, J., & Zisserman, A. (2003). "Video Google: A text retrieval approach"
+   - Application of BoVW to video
+
+Online Resources:
+----------------
+1. OpenCV SIFT Tutorial:
+   https://docs.opencv.org/master/da/df5/tutorial_py_sift_intro.html
+
+2. Scikit-learn K-Means:
+   https://scikit-learn.org/stable/modules/clustering.html#k-means
+
+3. BoVW Explained:
+   https://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/csurka-eccv-04.pdf
+
+Extensions and Challenges:
+-------------------------
+After completing the basic lab, try these:
+
+1. Multi-class classification:
+   - Add more categories (3, 4, 5 classes)
+   - See how accuracy changes
+
+2. Different features:
+   - Try SURF or ORB instead of SIFT
+   - Compare performance
+
+3. Vocabulary size experiment:
+   - Plot accuracy vs K (vocabulary size)
+   - Find optimal K for your dataset
+
+4. Advanced techniques:
+   - Spatial pyramid matching
+   - TF-IDF weighting
+   - Soft assignment (assign to multiple words)
+
+=============================================================================
+GOOD LUCK WITH YOUR LAB!
+=============================================================================
+
+Remember:
+- Understand the concepts before running the code
+- Experiment with different parameters
+- Document your findings
+- Ask questions if you're stuck
+
+The goal is not just to run the code, but to understand:
+- WHY we use visual words
+- HOW the pipeline works
+- WHAT makes a good vocabulary
+- WHEN this approach is useful
+
+Happy Learning!
+=============================================================================
+"""
+
+# Save this guide
+if __name__ == "__main__":
+    print("Lab 08 Student Guide")
+    print("=" * 60)
+    print("\nThis guide contains:")
+    print("- Setup instructions")
+    print("- Dataset preparation guidelines")
+    print("- Task explanations")
+    print("- Common error solutions")
+    print("- Tips for success")
+    print("\nRefer to this guide while completing the lab!")
