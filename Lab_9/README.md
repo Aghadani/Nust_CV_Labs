@@ -52,4 +52,5 @@ python lab09_q3_interpolation_practical.py
 * **Inverse Transformations:** To "undo" a geometric distortion, we calculate the inverse of the transformation matrix ($M^{-1}$).
 ---
 Course: CS-474 Computer VisionLab: 09 - 2D Transformations
+
 Semester: 6th Semester
