@@ -2,18 +2,6 @@
 Assessment Question 1: Stock Price Prediction
 ==============================================
 
-INSTRUCTIONS FOR STUDENTS:
-This code contains MULTIPLE errors that prevent it from running correctly.
-Your task is to debug and fix ALL errors to make the program work properly.
-
-**DEBUGGING CHECKLIST:**
-□ Check all variable names (spelling and consistency)
-□ Check function parameters and arguments
-□ Check data types (numbers vs strings)
-□ Check mathematical operations
-□ Check array/list indexing
-□ Look for typos in method names
-□ Verify all imports are used correctly
 
 Student Name: ____________________
 CMSID: ____________________
