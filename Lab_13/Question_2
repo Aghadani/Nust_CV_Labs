@@ -1,1 +1,313 @@
+"""
+Lab 13 - Question 2: Q-Learning on FrozenLake-v1
+Windows Compatible Version
+"""
 
+import gym
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import deque
+
+# ============================================================================
+# HYPERPARAMETERS
+# ============================================================================
+
+ALPHA = 0.8           # Learning rate
+GAMMA = 0.95          # Discount factor
+EPSILON_START = 1.0   # Initial exploration rate
+EPSILON_MIN = 0.01    # Minimum exploration rate
+EPSILON_DECAY = 0.995 # Epsilon decay rate
+EPISODES = 10000      # Number of training episodes
+TEST_EPISODES = 100   # Number of test episodes
+
+# ============================================================================
+# ENVIRONMENT SETUP
+# ============================================================================
+
+# Create FrozenLake environment
+env = gym.make('FrozenLake-v1', is_slippery=True)
+
+# Get dimensions
+n_states = env.observation_space.n    # 16 states (4x4 grid)
+n_actions = env.action_space.n        # 4 actions (left, down, right, up)
+
+print("=" * 70)
+print("FROZENLAKE-V1 Q-LEARNING")
+print("=" * 70)
+print(f"State space: {n_states} states")
+print(f"Action space: {n_actions} actions (0=Left, 1=Down, 2=Right, 3=Up)")
+print(f"Training episodes: {EPISODES}")
+print()
+
+# ============================================================================
+# Q-TABLE INITIALIZATION
+# ============================================================================
+
+Q_table = np.zeros((n_states, n_actions))
+print(f"Q-table initialized: {Q_table.shape}")
+print()
+
+# ============================================================================
+# Q-LEARNING FUNCTIONS
+# ============================================================================
+
+def epsilon_greedy_action(state, epsilon):
+    """Choose action using epsilon-greedy strategy"""
+    if np.random.random() < epsilon:
+        return env.action_space.sample()  # Random action (exploration)
+    else:
+        return np.argmax(Q_table[state])  # Best action (exploitation)
+
+def train_q_learning(alpha, gamma, epsilon_start, epsilon_min, epsilon_decay, episodes):
+    """Train Q-Learning agent"""
+    
+    # Tracking metrics
+    episode_rewards = []
+    success_rates = []
+    epsilons = []
+    
+    epsilon = epsilon_start
+    success_window = deque(maxlen=100)
+    
+    print(f"Training with α={alpha}, γ={gamma}, ε={epsilon_start}→{epsilon_min}")
+    print("-" * 70)
+    
+    for episode in range(episodes):
+        state = env.reset()
+        if isinstance(state, tuple):
+            state = state[0]  # Handle new gym API
+            
+        done = False
+        episode_reward = 0
+        
+        while not done:
+            # Choose action
+            action = epsilon_greedy_action(state, epsilon)
+            
+            # Take action
+            result = env.step(action)
+            if len(result) == 5:  # New gym API
+                next_state, reward, terminated, truncated, info = result
+                done = terminated or truncated
+            else:  # Old gym API
+                next_state, reward, done, info = result
+            
+            # Q-Learning update
+            best_next_action = np.argmax(Q_table[next_state])
+            td_target = reward + gamma * Q_table[next_state, best_next_action]
+            td_error = td_target - Q_table[state, action]
+            Q_table[state, action] += alpha * td_error
+            
+            state = next_state
+            episode_reward += reward
+        
+        # Track metrics
+        episode_rewards.append(episode_reward)
+        success_window.append(episode_reward)
+        epsilons.append(epsilon)
+        
+        # Calculate success rate every 100 episodes
+        if (episode + 1) % 100 == 0:
+            success_rate = np.mean(success_window)
+            success_rates.append(success_rate)
+            print(f"Episode {episode+1}/{episodes} | "
+                  f"Success Rate: {success_rate:.3f} | "
+                  f"ε: {epsilon:.3f}")
+        
+        # Decay epsilon
+        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+    
+    print("-" * 70)
+    print("Training completed!")
+    print()
+    
+    return episode_rewards, success_rates, epsilons
+
+# ============================================================================
+# TRAINING
+# ============================================================================
+
+episode_rewards, success_rates, epsilons = train_q_learning(
+    ALPHA, GAMMA, EPSILON_START, EPSILON_MIN, EPSILON_DECAY, EPISODES
+)
+
+# ============================================================================
+# PLOTTING RESULTS
+# ============================================================================
+
+print("Generating plots...")
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 10))
+
+# Plot 1: Episode Rewards
+axes[0].plot(episode_rewards, alpha=0.3, color='blue', linewidth=0.5)
+axes[0].set_xlabel('Episode', fontsize=12)
+axes[0].set_ylabel('Reward', fontsize=12)
+axes[0].set_title('Episode Rewards', fontsize=14, fontweight='bold')
+axes[0].grid(True, alpha=0.3)
+
+# Plot 2: Moving Average (window=100)
+window_size = 100
+moving_avg = np.convolve(episode_rewards, np.ones(window_size)/window_size, mode='valid')
+axes[1].plot(moving_avg, color='green', linewidth=2)
+axes[1].set_xlabel('Episode', fontsize=12)
+axes[1].set_ylabel('Average Reward', fontsize=12)
+axes[1].set_title(f'Moving Average (Window={window_size})', fontsize=14, fontweight='bold')
+axes[1].grid(True, alpha=0.3)
+
+# Plot 3: Success Rate
+x_success = np.arange(100, EPISODES + 1, 100)
+axes[2].plot(x_success, success_rates, color='red', linewidth=2, marker='o')
+axes[2].set_xlabel('Episode', fontsize=12)
+axes[2].set_ylabel('Success Rate', fontsize=12)
+axes[2].set_title('Success Rate (Every 100 Episodes)', fontsize=14, fontweight='bold')
+axes[2].grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('q2_training_plots.png', dpi=150, bbox_inches='tight')
+print("✓ Saved: q2_training_plots.png")
+plt.show()
+
+# ============================================================================
+# TEST EVALUATION (ε = 0)
+# ============================================================================
+
+print("\nEvaluating trained agent...")
+print("-" * 70)
+
+test_rewards = []
+test_successes = 0
+
+for episode in range(TEST_EPISODES):
+    state = env.reset()
+    if isinstance(state, tuple):
+        state = state[0]
+        
+    done = False
+    episode_reward = 0
+    
+    while not done:
+        # Greedy action (no exploration)
+        action = np.argmax(Q_table[state])
+        
+        result = env.step(action)
+        if len(result) == 5:
+            next_state, reward, terminated, truncated, info = result
+            done = terminated or truncated
+        else:
+            next_state, reward, done, info = result
+        
+        state = next_state
+        episode_reward += reward
+    
+    test_rewards.append(episode_reward)
+    if episode_reward > 0:
+        test_successes += 1
+
+test_success_rate = test_successes / TEST_EPISODES
+test_avg_reward = np.mean(test_rewards)
+
+print(f"Test Episodes: {TEST_EPISODES}")
+print(f"Success Rate: {test_success_rate:.2%} ({test_successes}/{TEST_EPISODES})")
+print(f"Average Reward: {test_avg_reward:.3f}")
+print("-" * 70)
+print()
+
+# ============================================================================
+# COMPARE DIFFERENT LEARNING RATES
+# ============================================================================
+
+print("Comparing different learning rates...")
+print("=" * 70)
+
+alphas = [0.1, 0.5, 0.8]
+comparison_results = []
+
+for alpha in alphas:
+    print(f"\nTraining with α = {alpha}...")
+    
+    # Reset Q-table
+    Q_table = np.zeros((n_states, n_actions))
+    
+    # Train
+    _, _, _ = train_q_learning(
+        alpha, GAMMA, EPSILON_START, EPSILON_MIN, EPSILON_DECAY, EPISODES
+    )
+    
+    # Test
+    test_rewards = []
+    for episode in range(TEST_EPISODES):
+        state = env.reset()
+        if isinstance(state, tuple):
+            state = state[0]
+            
+        done = False
+        episode_reward = 0
+        
+        while not done:
+            action = np.argmax(Q_table[state])
+            result = env.step(action)
+            if len(result) == 5:
+                next_state, reward, terminated, truncated, info = result
+                done = terminated or truncated
+            else:
+                next_state, reward, done, info = result
+            
+            state = next_state
+            episode_reward += reward
+        
+        test_rewards.append(episode_reward)
+    
+    success_rate = np.mean([1 if r > 0 else 0 for r in test_rewards])
+    avg_reward = np.mean(test_rewards)
+    
+    comparison_results.append({
+        'alpha': alpha,
+        'success_rate': success_rate,
+        'avg_reward': avg_reward
+    })
+
+# ============================================================================
+# COMPARISON TABLE
+# ============================================================================
+
+print("\n" + "=" * 70)
+print("LEARNING RATE COMPARISON")
+print("=" * 70)
+print(f"{'Learning Rate (α)':<20} {'Success Rate':<20} {'Avg Reward':<20}")
+print("-" * 70)
+
+for result in comparison_results:
+    print(f"{result['alpha']:<20} {result['success_rate']:.2%}{'':>13} {result['avg_reward']:.4f}")
+
+print("=" * 70)
+
+# Find best alpha
+best_result = max(comparison_results, key=lambda x: x['success_rate'])
+print(f"\nBest Learning Rate: α = {best_result['alpha']}")
+print(f"Achieved Success Rate: {best_result['success_rate']:.2%}")
+print()
+
+# ============================================================================
+# ANALYSIS
+# ============================================================================
+
+print("=" * 70)
+print("ANALYSIS")
+print("=" * 70)
+print("""
+Based on the results:
+
+1. Higher learning rates (α = 0.8) tend to learn faster but may be less stable.
+2. Lower learning rates (α = 0.1) learn more slowly but converge more reliably.
+3. The optimal learning rate balances speed and stability.
+4. FrozenLake is stochastic (slippery ice), so some variance is expected.
+5. Epsilon decay is crucial - early exploration, later exploitation.
+6. Success rate around 70-80% is good for this environment.
+
+Recommendation: α = 0.5 to 0.8 provides a good balance for FrozenLake.
+""")
+print("=" * 70)
+
+env.close()
+print("\nAll tasks completed successfully!")
